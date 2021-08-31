@@ -15,8 +15,7 @@
 
 ```bash
 docker build -t marcelodsales/go-gin-gorm-pg:latest . # You can change the image name
-minikube cache add marcelodsales/go-gin-gorm-pg:latest
-minikube cache reload
+minikube image load marcelodsales/go-gin-gorm-pg:latest
 ansible-playbook config-minikube-playbook.yaml -vv
 ansible-playbook deploy-postgres-kubernetes-playbook.yaml -vv
 ansible-playbook deploy-go-gin-gorm-pg-kubernetes-playbook.yaml -vv
@@ -29,8 +28,7 @@ Access http://127.0.0.1:3000/ to see logviewer
 ## Update kubernetes deployment
 ```bash
 docker build -t marcelodsales/go-gin-gorm-pg:0.0.1 . # increase the version
-minikube cache add marcelodsales/go-gin-gorm-pg:0.0.1
-minikube cache reload # Always when the image is generated again
+minikube image load marcelodsales/go-gin-gorm-pg:0.0.1
 kubectl rollout pause deployment.v1.apps/go-gin-gorm-pg -n dev
 kubectl --record deployment.apps/go-gin-gorm-pg set image deployment.v1.apps/go-gin-gorm-pg go-gin-gorm-pg=marcelodsales/go-gin-gorm-pg:0.0.1 -n dev
 kubectl rollout resume deployment.v1.apps/go-gin-gorm-pg -n dev

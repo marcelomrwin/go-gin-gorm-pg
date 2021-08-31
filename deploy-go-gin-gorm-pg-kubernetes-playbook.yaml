@@ -72,7 +72,7 @@
                           name: go-gin-gorm-pg-config
                       - secretRef:
                           name: postgres-secret
-                    imagePullPolicy: Always
+                    imagePullPolicy: IfNotPresent
                     ports:
                       - containerPort: 8080
                         protocol: TCP
