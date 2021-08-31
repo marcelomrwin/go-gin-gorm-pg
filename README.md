@@ -16,10 +16,15 @@
 ```bash
 docker build -t marcelodsales/go-gin-gorm-pg:latest . # You can change the image name
 minikube cache add marcelodsales/go-gin-gorm-pg:latest
+minikube cache reload
 ansible-playbook config-minikube-playbook.yaml -vv
+ansible-playbook deploy-postgres-kubernetes-playbook.yaml -vv
 ansible-playbook deploy-go-gin-gorm-pg-kubernetes-playbook.yaml -vv
 minikube tunnel --cleanup
 ```
+
+### Logviewer
+Access http://127.0.0.1:3000/ to see logviewer
 
 ## Update kubernetes deployment
 ```bash
