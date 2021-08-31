@@ -1,0 +1,107 @@
+---
+- name: Deploy the app go-gin-gorm-pg on local kubernetes cluster
+  hosts: localhost
+  gather_facts: no
+
+  collections:
+    - community.kubernetes
+
+  tasks:
+    - name: Create App ConfigMap
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          kind: ConfigMap
+          metadata:
+            namespace: dev
+            name: go-gin-gorm-pg-config
+            labels:
+              app: go-gin-gorm-pg
+          data:
+            POSTGRES_HOST: postgres
+            POSTGRES_PORT: "5432"
+
+    - name: Create App Service
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            namespace: dev
+            name: go-gin-gorm-pg
+            labels:
+              app: go-gin-gorm-pg
+          spec:
+            ports:
+              - port: 8080
+                protocol: "TCP"
+                targetPort: 8080
+            type: LoadBalancer
+            selector:
+              app: go-gin-gorm-pg
+
+    - name: Create App Deployment
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: go-gin-gorm-pg
+            labels:
+              app: go-gin-gorm-pg
+            namespace: dev
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: go-gin-gorm-pg
+                tier: api
+            template:
+              metadata:
+                labels:
+                  app: go-gin-gorm-pg
+                  tier: api
+              spec:
+                containers:
+                  - name: go-gin-gorm-pg
+                    image: "marcelodsales/go-gin-gorm-pg:latest"
+                    envFrom:
+                      - configMapRef:
+                          name: go-gin-gorm-pg-config
+                      - secretRef:
+                          name: postgres-secret
+                    imagePullPolicy: IfNotPresent
+                    ports:
+                      - containerPort: 8080
+                        protocol: TCP
+                    lifecycle:
+                      preStop:
+                        exec:
+                          command: [ "sh", "-c", "tail -f /dev/null" ]
+
+    - name: Create App Ingress / Ambassador
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            namespace: dev
+            annotations:
+              kubernetes.io/ingress.class: ambassador
+            name: go-gin-gorm-pg
+            labels:
+              app: go-gin-gorm-pg
+          spec:
+            rules:
+              - http:
+                  paths:
+                    - path: /app/
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: go-gin-gorm-pg
+                          port:
+                            number: 8080

@@ -1,0 +1,135 @@
+---
+- name: Deploy postgres database on local kubernetes cluster
+  hosts: localhost
+  gather_facts: no
+
+  collections:
+    - community.kubernetes
+
+  tasks:
+    - name: Create Data Storage Path
+      ansible.builtin.shell: minikube ssh -- mkdir -p /home/docker/pgdata
+
+    - name: Create Secrets For Database
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          kind: Secret
+          metadata:
+            namespace: dev
+            name: postgres-secret
+          data:
+            POSTGRES_DB: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: demo
+
+    - name: Create Postgres Service
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            namespace: dev
+            name: postgres
+            labels:
+              app: postgres
+          spec:
+            ports:
+              - port: 5432
+                name: postgres
+            clusterIP: None
+            selector:
+              app: postgres
+
+    - name: Create Storage Class
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          kind: StorageClass
+          apiVersion: storage.k8s.io/v1
+          metadata:
+            name: local-storage
+          provisioner: kubernetes.io/no-provisioner
+          volumeBindingMode: WaitForFirstConsumer
+
+    - name: Create Postgres Volume
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: demo-local-pv
+          spec:
+            capacity:
+              storage: 1Gi
+            accessModes:
+              - ReadWriteOnce
+            persistentVolumeReclaimPolicy: Retain
+            storageClassName: local-storage
+            local:
+              path: /home/docker/pgdata
+            nodeAffinity:
+              required:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: kubernetes.io/hostname
+                        operator: In
+                        values:
+                          - micro
+
+    - name: Create Persistent Volume Claim
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+          metadata:
+            namespace: dev
+            name: demo-local-pvc
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: local-storage
+            resources:
+              requests:
+                storage: 1Gi
+
+    - name: Create Postgres Deployment
+      community.kubernetes.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            namespace: dev
+            name: postgres-demo
+          spec:
+            serviceName: 'postgres'
+            replicas: 2
+            selector:
+              matchLabels:
+                app: postgres
+            template:
+              metadata:
+                namespace: dev
+                labels:
+                  app: postgres
+              spec:
+                containers:
+                  - name: postgres
+                    image: postgres:latest
+                    envFrom:
+                      - secretRef:
+                          name: postgres-secret
+                    ports:
+                      - containerPort: 5432
+                        name: postgres
+                    volumeMounts:
+                      - name: postgres
+                        mountPath: /var/lib/postgresql/data
+                volumes:
+                  - name: postgres
+                    persistentVolumeClaim:
+                      claimName: demo-local-pvc

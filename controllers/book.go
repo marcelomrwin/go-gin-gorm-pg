@@ -25,9 +25,9 @@ func CreateBook(c *gin.Context) {
 		return
 	}
 	// Create Book
-	book := models.Book{Title: input.Author, Author: input.Author}
+	book := models.Book{Title: input.Title, Author: input.Author}
 	db.Create(&book)
-	c.JSON(http.StatusOK, gin.H{"data": book})
+	c.JSON(http.StatusCreated, gin.H{"data": book})
 }
 // GET /books/:id
 // Find a book

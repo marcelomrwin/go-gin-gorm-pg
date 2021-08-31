@@ -23,6 +23,7 @@ func SetupModels() *gorm.DB {
 	if err != nil {
 		panic("Failed to connect to database!")
 	}
+	db.DropTableIfExists(&Book{})
 	db.AutoMigrate(&Book{})
 	// Initialise value
 	m := Book{Author: "author1", Title: "title1"}

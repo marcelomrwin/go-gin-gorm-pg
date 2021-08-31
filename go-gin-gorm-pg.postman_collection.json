@@ -1,0 +1,81 @@
+{
+	"info": {
+		"_postman_id": "8261b4f8-b5b6-4d0d-9c21-205ab5c2756b",
+		"name": "go-gin-gorm-pg",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Books",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test(\"Data contains book with id 1\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.data[0].id).to.eql(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:80/app/books",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "80",
+					"path": [
+						"app",
+						"books"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Book",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"The Lord of the Rings - the fellowship of the ring\",\n    \"author\": \"Tolkien\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:80/app/books",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "80",
+					"path": [
+						"app",
+						"books"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

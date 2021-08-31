@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    ansible_python_interpreter: '{{ ansible_playbook_python }}'
+
+  pre_tasks:
+    - name: Check Minikube's status.
+      command: minikube status
+      register: minikube_status
+      changed_when: false
+      ignore_errors: true
+
+    - name: Delete minikube instance
+      command: "{{ item }}"
+      loop:
+        - minikube delete -p micro
+        - rm -rf ~/.minikube/profiles/micro
+        - kubectl config delete-context micro
+        - kubectl config delete-cluster micro
+        - kubectl config unset users.micro
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+      ignore_errors: true
+
+    - name: Configure minikube memory
+      command: minikube config set memory 4096
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+
+    - name: Configure minikube cpu
+      command: minikube config set cpus 4
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+
+    - name: Start Minikube if it's not running.
+      command: minikube start --profile micro --insecure-registry "10.0.0.0/24,192.168.0.0/24"
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+
+    - name: wait minikube start
+      command: kubectl get pods --all-namespaces
+      register: k8s_status
+      until: k8s_status is not failed
+      retries: 30
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+
+    - name: Change default context kubectl
+      command: "{{ item }}"
+      loop:
+        - minikube profile micro
+        - kubectl config use-context micro
+
+    - name: Configure Addons
+      command: "{{ item }}"
+      loop:
+        - minikube addons enable dashboard
+        - minikube addons enable registry
+        - minikube addons enable metrics-server
+        - minikube addons enable ambassador
+        - minikube addons enable helm-tiller
+        - minikube addons enable logviewer
+      when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
+
+    - name: Update logviewer service to LoadBalancer
+      ansible.builtin.command:
+        cmd: "kubectl patch svc logviewer -n kube-system -p '{\"spec\":{\"type\": \"LoadBalancer\"}}'"
+      register: logviewer_status
+      until: logviewer_status is not failed
+      retries: 30
+
+  tasks:
+    - name: Create dev namespace
+      command: kubectl create namespace dev
+      ignore_errors: true
+
+    - name: Get current kubeconfig
+      command: kubectl config view --flatten=true
+      register: kubeconfig_var
+
+    - name: Print Config logviewer
+      ansible.builtin.debug:
+        msg: "Access http://127.0.0.1:3000/ to see logviewer"
