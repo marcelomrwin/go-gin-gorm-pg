@@ -9,31 +9,6 @@
 * Minikube
 * Postman
 
-## Create the project
-```bash
-go mod init go-gin-gorm-pg
-```
-
-## Import dependencies
-```bash
-go mod tidy
-```
-
-## Build Project
-```bash
-go build .
-```
-
-## Run the project
-```bash
-docker-compose up
-```
-
-## Test
-```bash
-curl http://localhost:8080/books
-```
-
 ## Test with Kubernetes
 * Install ansible
 * Install minikube
@@ -60,4 +35,34 @@ kubectl rollout resume deployment.v1.apps/go-gin-gorm-pg -n dev
 ```bash
 kubectl get ingress -n dev
 curl 127.0.0.1:80/app/books
+```
+
+## Stop Minikube
+```bash
+minikube stop micro
+```
+
+## Create the project
+```bash
+go mod init go-gin-gorm-pg
+```
+
+## Import dependencies
+```bash
+go mod tidy
+```
+
+## Build Project
+```bash
+go build .
+```
+
+## Run the project
+```bash
+docker-compose up
+```
+
+## Test
+```bash
+curl http://localhost:8080/books
 ```
