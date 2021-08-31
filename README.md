@@ -13,5 +13,13 @@ go mod tidy
 go build .
 ```
 
+## Run the project
+```bash
+docker-compose up
+```
 
+## Test
+```bash
+curl http://localhost:8080/books
+```
 
